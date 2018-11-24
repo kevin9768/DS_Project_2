@@ -96,17 +96,22 @@ int main(int argc, char* argv[]){
     }
 
 
-
     //run through order
     cout<<order[0].x<<' '<<order[0].y<<'\n';
     last_order.push_back(order[0]);
     final_clean[order[0].x][order[0].y]=true;
     int bt=life;
     bt--;
+    int fix=0;
     for(int i=1;i<order.size();i++){
-        if(final_clean[order[i].x][order[i].y]) continue;
+        if(final_clean[order[i].x][order[i].y]){
+            vector<point>::iterator iter = order.begin()+i;
+            order.erase(iter);
+            i--;
+            continue;
+        }
 
-        if(isAdj(order[i-1],order[i])){
+        if(isAdj(order[i-1-fix],order[i])){
             int dist = mindistfrominit[order[i].x][order[i].y];
             if(bt-1>=dist+1){
                 bt--;
@@ -115,20 +120,23 @@ int main(int argc, char* argv[]){
                 final_clean[order[i].x][order[i].y]=true;
             }
             else{
-                gotobattery(order[i-1].x, order[i-1].y);
+                gotobattery(order[i-1-fix].x, order[i-1-fix].y);
                 bt = getback(order[i].x, order[i].y);
             }
+            fix=0;
         }
         else{
-            gotobattery(order[i-1].x, order[i-1].y);
+            gotobattery(order[i-1-fix].x, order[i-1-fix].y);
             bt = getback(order[i].x, order[i].y);
+            fix=0;
         }
     }
     gotobattery(order.back().x,order.back().y);
 
 
+
     //output
-    char outftmp[15] = "/final.data";
+    char outftmp[15] = "/final.path";
     char outf[30];
     strcpy(outf,argv[1]);
     strcat(outf,outftmp);
