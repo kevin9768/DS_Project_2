@@ -4,10 +4,11 @@
 #include<stack>
 #include<queue>
 #include<vector>
+#include<cmath>
 #define UP 0
-#define DOWN 1
-#define LEFT 2
-#define RIGHT 3
+#define RIGHT 1
+#define DOWN 2
+#define LEFT 3
 
 using namespace std;
 
@@ -31,7 +32,7 @@ struct bfs_Data{
 int total_row, total_col;
 int life;
 int r_row, r_col;
-int size_dir[4] = {0};
+int size_dir[4] = {0}; //0:上 1:右 2:下 3:左
 vector<Point> order, final_order;
 
 void open_data(ifstream &floor, char* id){
@@ -43,6 +44,7 @@ void open_data(ifstream &floor, char* id){
 
 void bfs(bfs_Data **a, Data **d, int r_r, int r_c);
 void dfs(bfs_Data **a, Data **d, int r_r, int r_c);
+inline bool isAdj(Point a, Point b);
 
 int main(int argc, char* argv[]){
     ifstream inFile;
@@ -67,11 +69,11 @@ int main(int argc, char* argv[]){
             inFile >> c;
             if(c=='1'){
                 mat[i][j].available = false;
-                mat[i][j].init_clean = mat[i][j].final_clean = true;
+                dist[i][j].clean = mat[i][j].init_clean = mat[i][j].final_clean = true;
             }
             else{
                 mat[i][j].available = true;
-                mat[i][j].init_clean = mat[i][j].final_clean = false;
+                dist[i][j].clean = mat[i][j].init_clean = mat[i][j].final_clean = false;
                 if(c=='R'){
                     r_row = i, r_col = j;
                 }
@@ -91,6 +93,10 @@ int main(int argc, char* argv[]){
                 if(total_row>0 && mat[init_row-1][init_col].available)
                     init_row--;
                 break;
+            case RIGHT:
+                if(init_col<total_col-1 && mat[init_row][init_col+1].available)
+                    init_col++;
+                break;
             case DOWN:
                 if(init_row<total_row-1 && mat[init_row+1][init_col].available)
                     init_row++;
@@ -98,11 +104,7 @@ int main(int argc, char* argv[]){
             case LEFT:
                 if(total_col>0 && mat[init_row][init_col-1].available)
                     init_col--;
-                break;
-            case RIGHT:
-                if(init_col<total_col-1 && mat[init_row][init_col+1].available)
-                    init_col++;
-                break;
+                break;            
         }
         dfs(dist, mat, init_row, init_col);
         size_dir[i] = order.size() - dirsize;
@@ -166,4 +168,9 @@ void dfs(bfs_Data **a, Data **d, int r, int c){
         dfs(a,d,r+1,c);
     if(c+1<total_col && !d[r][c+1].init_clean && a[r][c+1].min_dist==a[r][c].min_dist+1)
         dfs(a,d,r,c+1);
+}
+
+inline bool isAdj(Point a, Point b){
+    if(abs(a.r-b.r)+abs(a.c-b.c)==1)    return true;
+    return false;
 }
