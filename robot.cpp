@@ -30,7 +30,6 @@ vector<point> last_order;
 void dfs(int r, int c);
 void bfs(int r, int c);
 void clean_data();
-void fixmin();
 inline bool isAdj(point a, point b);
 void gotobattery(int x, int y);
 int getback(int x, int y);
@@ -65,7 +64,7 @@ int main(int argc, char* argv[]){
         for(int j = 0; j < col; j++){
             init_clean[i][j]  = false;
             final_clean[i][j] = false;
-            mindistfrominit[i][j] = 498600;
+            mindistfrominit[i][j] = 1000000;
             char c;
             inFile >> c;
             if(c == '1'){
@@ -95,6 +94,7 @@ int main(int argc, char* argv[]){
         else if(init_row>0      &&  available[init_row-1][init_col] && dir<4)      init_row--,dir=4;
         clean_data();
         bfs(init_row, init_col);
+        
 
         for(int i=0; i<row; i++)
             for(int j=0; j<col; j++)
@@ -105,22 +105,23 @@ int main(int argc, char* argv[]){
 
         for(int i=0; i<row; i++)
             for(int j=0; j<col; j++)
-                mindistfrominit[i][j]=498600;
+                mindistfrominit[i][j]=1000000;
     }
     //cout<<"1\n";
     clean_data();
     dfs(init_row, init_col);
     
 
-    /*for(int i=0;i<row;i++){           //function for seeing if minimum distance is working
+    for(int i=0;i<row;i++){           //function for seeing if minimum distance is working
         for(int j=0;j<col;j++){
             cout<<mindistfrominit[i][j]<<' ';
         }
         cout<<'\n';
-    }*/
+    }
 
 
     //run through order
+    //cout<< order[0].x<<' '<<order[0].y<<'\n';
     last_order.push_back(order[0]);
     final_clean[order[0].x][order[0].y]=true;
     int bt=life;
@@ -131,6 +132,7 @@ int main(int argc, char* argv[]){
             vector<point>::iterator iter = order.begin()+i;
             order.erase(iter);
             i--;
+            
             continue;
         }
 
@@ -182,53 +184,6 @@ void dfs(int r, int c){
     if(c>0&&!clean[r][c-1])           dfs(r,c-1);
     if(r<row-1&&!clean[r+1][c])       dfs(r+1,c);
     if(c<col-1&&!clean[r][c+1])       dfs(r,c+1);
-}
-
-void fixmin(){
-    for(int i=0;i<row;i++){
-        for(int j=0;j<col;j++){
-            int min = mindistfrominit[i][j];
-            if(!available[i][j])    continue;
-            if(i>0&&min>mindistfrominit[i-1][j]+1)    min = mindistfrominit[i-1][j]+1;
-            if(j>0&&min>mindistfrominit[i][j-1]+1)    min = mindistfrominit[i][j-1]+1;
-            if(i<row-1&&min>mindistfrominit[i+1][j]+1)  min = mindistfrominit[i+1][j]+1;
-            if(j<col-1&&min>mindistfrominit[i][j+1]+1)  min = mindistfrominit[i][j+1]+1;
-            mindistfrominit[i][j]=min;
-        }
-    }
-    for(int i=row-1;i>=0;i--){
-        for(int j=col-1;j>=0;j--){
-            int min = mindistfrominit[i][j];
-            if(!available[i][j])    continue;
-            if(i>0&&min>mindistfrominit[i-1][j]+1)    min = mindistfrominit[i-1][j]+1;
-            if(j>0&&min>mindistfrominit[i][j-1]+1)    min = mindistfrominit[i][j-1]+1;
-            if(i<row-1&&min>mindistfrominit[i+1][j]+1)  min = mindistfrominit[i+1][j]+1;
-            if(j<col-1&&min>mindistfrominit[i][j+1]+1)  min = mindistfrominit[i][j+1]+1;
-            mindistfrominit[i][j]=min;
-        }
-    }
-    for(int i=row-1;i>=0;i--){
-        for(int j=0;j<col;j++){
-            int min = mindistfrominit[i][j];
-            if(!available[i][j])    continue;
-            if(i>0&&min>mindistfrominit[i-1][j]+1)    min = mindistfrominit[i-1][j]+1;
-            if(j>0&&min>mindistfrominit[i][j-1]+1)    min = mindistfrominit[i][j-1]+1;
-            if(i<row-1&&min>mindistfrominit[i+1][j]+1)  min = mindistfrominit[i+1][j]+1;
-            if(j<col-1&&min>mindistfrominit[i][j+1]+1)  min = mindistfrominit[i][j+1]+1;
-            mindistfrominit[i][j]=min;
-        }
-    }
-    for(int i=0;i<row;i++){
-        for(int j=col-1;j>=0;j--){
-            int min = mindistfrominit[i][j];
-            if(!available[i][j])    continue;
-            if(i>0&&min>mindistfrominit[i-1][j]+1)    min = mindistfrominit[i-1][j]+1;
-            if(j>0&&min>mindistfrominit[i][j-1]+1)    min = mindistfrominit[i][j-1]+1;
-            if(i<row-1&&min>mindistfrominit[i+1][j]+1)  min = mindistfrominit[i+1][j]+1;
-            if(j<col-1&&min>mindistfrominit[i][j+1]+1)  min = mindistfrominit[i][j+1]+1;
-            mindistfrominit[i][j]=min;
-        }
-    }
 }
 
 inline bool isAdj(point a, point b){
@@ -290,7 +245,6 @@ void bfs(int s_r,int s_c){
         upos=q.front();
         //cout<<upos.x<<" "<<upos.y<<endl;
         q.pop();
- 
         if(upos.x>0&&available[upos.x-1][upos.y]&&!clean[upos.x-1][upos.y]){
             in.x=upos.x-1;
             in.y=upos.y;
