@@ -93,7 +93,7 @@ int main(int argc, char* argv[]){
         }
 
 
-    //determine the order to clean
+    //determine the order to clean/
     for(int i=0; i<4; i++){
         int init_row = r_row, init_col = r_col;
         int dirsize = order.size();
