@@ -139,16 +139,16 @@ int main(int argc, char* argv[]){
         for(int j=0; j<total_col; j++){
             int up, right, down, left;
 
-            up = Up==NULL?1000000:Up[i][j].min_dist;
-            right = Right==NULL?1000000:Right[i][j].min_dist;
-            down = Down==NULL?1000000:Down[i][j].min_dist;
-            left = Left==NULL?1000000:Left[i][j].min_dist;
+            up    = (Up    == NULL ? 1000000:Up[i][j].min_dist);
+            right = (Right == NULL ? 1000000:Right[i][j].min_dist);
+            down  = (Down  == NULL ? 1000000:Down[i][j].min_dist);
+            left  = (Left  == NULL ? 1000000:Left[i][j].min_dist);
             if(up==1000000&&right==1000000&&down==1000000&&left==1000000){
-                cout<<"x ";
+                //cout<<"x ";
                 continue;
             }
             mat[i][j].dir_clean = findlowest(up,right,down,left); 
-            cout<<mat[i][j].dir_clean<<' ';
+            //cout<<mat[i][j].dir_clean<<' ';
         }
         cout<<'\n';
     }
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]){
     }
     
     
-    vector<bfs_Data**> each_dir = {Up, Right, Down, Left};
+    /*vector<bfs_Data**> each_dir = {Up, Right, Down, Left};
 
     for(int i=0;i<4;i++){
         if(each_dir[i]==NULL)   break;
@@ -221,7 +221,7 @@ int main(int argc, char* argv[]){
             j++;
         }
         cout<<order[i].r<<' '<<order[i].c<<'\n';
-    }
+    }*/
 
     //find final order
     final_order.push_back(order[0]);
