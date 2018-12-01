@@ -22,6 +22,7 @@ struct Point{
 struct Data{
     bool available;
     bool init_clean;
+    short dir_clean = -1;
     bool final_clean;
     int min_dist = 1000000;
 };
@@ -50,13 +51,24 @@ void open_data(ifstream &floor, char* id){
 }
 
 void bfs(bfs_Data **&dir, Data **mat, int r, int c);
-void dfs(bfs_Data **&dir, Data **mat, int r, int c);
+void dfs(bfs_Data **&dir, Data **mat, int r, int c, int d);
 inline bool isAdj(Point a, Point b);
 void gotobattery(Point p, Data **mat, int dir);
 int getback(Point p, Data** mat, int dir);
 void from_a_to_b(int a, int b, Data** mat);
 int pathfinder(Point a, Point b, Data** mat, int s_dir);
 int dist(Point a, int dir);
+
+int findlowest(int a, int b, int c, int d)
+{
+    int of_a_b = a <= b ? a : b;
+    int of_c_d = c <= d ? c : d;
+    int min = of_a_b <= of_c_d ? of_a_b : of_c_d;
+    if(min==a)  return 0;
+    if(min==b)  return 1;
+    if(min==c)  return 2;
+    if(min==d)  return 3;
+}
 
 int main(int argc, char* argv[]){
     ifstream inFile;
@@ -93,44 +105,86 @@ int main(int argc, char* argv[]){
         }
 
 
-    //determine the order to clean/
     for(int i=0; i<4; i++){
         int init_row = r_row, init_col = r_col;
-        int dirsize = order.size();
         switch(i){
             case UP:
                 if(total_row>0 && mat[init_row-1][init_col].available){
                     init_row--;
                     bfs(Up, mat, init_row, init_col);
-                    dfs(Up, mat, init_row, init_col);
-                    mat[r_row][r_col].available = true;
                 }
                 break;
             case RIGHT:
                 if(init_col<total_col-1 && mat[init_row][init_col+1].available){
                     init_col++;
                     bfs(Right, mat, init_row, init_col);
-                    dfs(Right, mat, init_row, init_col);
-                    mat[r_row][r_col].available = true;
                 }
                 break;
             case DOWN:
                 if(init_row<total_row-1 && mat[init_row+1][init_col].available){
                     init_row++;
                     bfs(Down, mat, init_row, init_col);
-                    dfs(Down, mat, init_row, init_col);
-                    mat[r_row][r_col].available = true;
                 }
                 break;
             case LEFT:
                 if(total_col>0 && mat[init_row][init_col-1].available){
                     init_col--;
                     bfs(Left, mat, init_row, init_col);
-                    dfs(Left, mat, init_row, init_col);
-                    mat[r_row][r_col].available = true;
                 }
                 break;            
         }
+    }
+
+    for(int i=0; i<total_row; i++){
+        for(int j=0; j<total_col; j++){
+            int up, right, down, left;
+
+            up = Up==NULL?1000000:Up[i][j].min_dist;
+            right = Right==NULL?1000000:Right[i][j].min_dist;
+            down = Down==NULL?1000000:Down[i][j].min_dist;
+            left = Left==NULL?1000000:Left[i][j].min_dist;
+            if(up==1000000&&right==1000000&&down==1000000&&left==1000000){
+                cout<<"x ";
+                continue;
+            }
+            mat[i][j].dir_clean = findlowest(up,right,down,left); 
+            cout<<mat[i][j].dir_clean<<' ';
+        }
+        cout<<'\n';
+    }
+    
+    //determine the order to clean/
+    for(int i=0; i<4; i++){
+        int init_row = r_row, init_col = r_col;
+        int dirsize = order.size();
+        mat[r_row][r_col].available = false;
+        switch(i){
+            case UP:
+                if(total_row>0 && mat[init_row-1][init_col].available){
+                    init_row--;
+                    dfs(Up, mat, init_row, init_col, i);                    
+                }
+                break;
+            case RIGHT:
+                if(init_col<total_col-1 && mat[init_row][init_col+1].available){
+                    init_col++;
+                    dfs(Right, mat, init_row, init_col, i);                   
+                }
+                break;
+            case DOWN:
+                if(init_row<total_row-1 && mat[init_row+1][init_col].available){
+                    init_row++;
+                    dfs(Down, mat, init_row, init_col, i);                  
+                }
+                break;
+            case LEFT:
+                if(total_col>0 && mat[init_row][init_col-1].available){
+                    init_col--;
+                    dfs(Left, mat, init_row, init_col, i);
+                }
+                break;            
+        }
+        mat[r_row][r_col].available = true;
         size_dir[i] = order.size();
         cout<<size_dir[i]<<' ';
         if(i==3)    cout<<'\n';
@@ -281,22 +335,24 @@ void bfs(bfs_Data **&d, Data **mat, int r_r, int r_c){
     for(int i=0; i<total_row; i++)
         for(int j=0; j<total_col; j++)
             d[i][j].clean = toclean[i][j];
+    
+    mat[r_row][r_col].available = true;
 }
 
-void dfs(bfs_Data **&dir, Data **mat, int r, int c){
-    if((dir[r][c].min_dist+1)*2>life)   return;
+void dfs(bfs_Data **&dir, Data **mat, int r, int c, int d){
+    if((dir[r][c].min_dist+1)*2>life||mat[r][c].dir_clean!=d)   return;
     dir[r][c].clean = true;
     if(!mat[r][c].available)  return;
     Point p(r,c);
     order.push_back(p);
     if(r>0 && !dir[r-1][c].clean && dir[r-1][c].min_dist==dir[r][c].min_dist+1)
-        dfs(dir,mat,r-1,c);
+        dfs(dir,mat,r-1,c,d);
     if(c>0 && !dir[r][c-1].clean && dir[r][c-1].min_dist==dir[r][c].min_dist+1)
-        dfs(dir,mat,r,c-1);
+        dfs(dir,mat,r,c-1,d);
     if(r+1<total_row && !dir[r+1][c].clean && dir[r+1][c].min_dist==dir[r][c].min_dist+1)
-        dfs(dir,mat,r+1,c);
+        dfs(dir,mat,r+1,c,d);
     if(c+1<total_col && !dir[r][c+1].clean && dir[r][c+1].min_dist==dir[r][c].min_dist+1)
-        dfs(dir,mat,r,c+1);
+        dfs(dir,mat,r,c+1,d);
 }
 
 inline bool isAdj(Point a, Point b){
