@@ -6,9 +6,9 @@
 #include<vector>
 #include<cmath>
 #define UP 0
-#define RIGHT 1
+#define RIGHT 3
 #define DOWN 2
-#define LEFT 3
+#define LEFT 1
 
 
 using namespace std;
@@ -64,10 +64,10 @@ int findlowest(int a, int b, int c, int d)
     int of_a_b = a <= b ? a : b;
     int of_c_d = c <= d ? c : d;
     int min = of_a_b <= of_c_d ? of_a_b : of_c_d;
-    if(min==a)  return 0;
-    if(min==b)  return 1;
-    if(min==c)  return 2;
-    if(min==d)  return 3;
+    if(min==a)  return UP;
+    if(min==b)  return RIGHT;
+    if(min==c)  return DOWN;
+    if(min==d)  return LEFT;
 }
 
 int main(int argc, char* argv[]){
