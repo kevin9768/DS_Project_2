@@ -49,14 +49,14 @@ void open_data(ifstream &floor, char* id){
     floor.open(floor_data);
 }
 
-void bfs(bfs_Data **dir, Data **mat, int r, int c);
-void dfs(bfs_Data **dir, Data **d, int r, int c);
+void bfs(bfs_Data **&dir, Data **mat, int r, int c);
+void dfs(bfs_Data **&dir, Data **mat, int r, int c);
 inline bool isAdj(Point a, Point b);
-void gotobattery(Point p, Data** mat);
-void s_gotobattery(Point p, Data** mat);
+void gotobattery(Point p, Data **mat, int dir);
 int getback(Point p, Data** mat, int dir);
 void from_a_to_b(int a, int b, Data** mat);
-int pathfinder(Point a, Point b, Data** mat);
+int pathfinder(Point a, Point b, Data** mat, int s_dir);
+int dist(Point a, int dir);
 
 int main(int argc, char* argv[]){
     ifstream inFile;
@@ -135,9 +135,12 @@ int main(int argc, char* argv[]){
         cout<<size_dir[i]<<' ';
         if(i==3)    cout<<'\n';
     }
+    
+    
     vector<bfs_Data**> each_dir = {Up, Right, Down, Left};
 
-    for(int i=0;i<4;i++)
+    for(int i=0;i<4;i++){
+        if(each_dir[i]==NULL)   break;
         for(int j=0;j<total_row;j++){
             for(int k=0;k<total_col;k++){
                 if(each_dir[i][j][k].min_dist==1000000) cout<<"x ";
@@ -145,10 +148,88 @@ int main(int argc, char* argv[]){
             }
             cout<<'\n';
         }
+        cout<<"-----------------------------------\n";
+    }
+    int j=0;
+    for(int i=0;i<order.size();i++){
+        if(i==size_dir[j]){
+            switch(j){
+                case 0:
+                    cout<<"up to right\n";
+                    break;
+                case 1:
+                    cout<<"right to down\n";
+                    break;
+                case 2:
+                    cout<<"down to left\n";
+                    break;
+            }
+            j++;
+        }
+        cout<<order[i].r<<' '<<order[i].c<<'\n';
+    }
+
+    //find final order
+    final_order.push_back(order[0]);
+    int fix=1, s=0, bt=life;
+    while(size_dir[s]==0)   s++;
+    bt--;
+    for(int i=1; i<order.size(); i++){
+        /*if(mat[order[i].r][order[i].c].final_clean){
+            fix++;
+            continue;
+        }
+        else    fix=1;*/
+
+        if(i==size_dir[s]){
+            int origin_dir = s;
+            s++;
+            while(size_dir[s]==size_dir[s-1])   s++;
+            int dest_dir = s;
+            
+            gotobattery(order[i-fix], mat, origin_dir);
+            from_a_to_b(origin_dir, dest_dir, mat);
+            final_order.push_back(Point(r_row,r_col));
+            bt = getback(order[i], mat, dest_dir);
+
+            continue;
+        }
+
+        if(isAdj(order[i-fix],order[i])){
+            if(bt-1>=dist(order[i],s)){
+                bt--;
+                final_order.push_back(order[i]);
+                mat[order[i].r][order[i].c].final_clean = true;
+            }
+            else{
+                gotobattery(order[i-fix], mat, s);
+                if(i==order.size()) break;
+                bt = getback(order[i],mat, s);
+            }
+        }
+        else{
+            gotobattery(order[i-fix], mat, s);
+            if(i==order.size()) break;
+            bt = getback(order[i],mat, s);
+        }
+    }
+    gotobattery(order[order.size()-1], mat, s);
+
+    //output
+    char outftmp[15] = "/final.path";
+    char outf[30];
+    strcpy(outf,argv[1]);
+    strcat(outf,outftmp);
+    ofstream outFile;
+    outFile.open(outf);
     
+    outFile<<final_order.size()<<'\n';
+    for(int i=0; i<final_order.size(); i++){
+        outFile<<final_order[i].r<<' '<<final_order[i].c<<'\n';
+    }
 }
 
-void bfs(bfs_Data **d, Data **mat, int r_r, int r_c){
+void bfs(bfs_Data **&d, Data **mat, int r_r, int r_c){
     
     d = new bfs_Data* [total_row];
     for(int i=0; i<total_row; i++)
@@ -157,7 +238,7 @@ void bfs(bfs_Data **d, Data **mat, int r_r, int r_c){
         for(int j=0; j<total_col; j++)
             d[i][j].clean = toclean[i][j];
     
-    d[r_row][r_col].clean=true;
+    d[r_row][r_col].clean = true;
     mat[r_row][r_col].available = false;
     queue<Point> q;
     Point u, upos, in;
@@ -202,8 +283,9 @@ void bfs(bfs_Data **d, Data **mat, int r_r, int r_c){
             d[i][j].clean = toclean[i][j];
 }
 
-void dfs(bfs_Data** dir, Data **mat, int r, int c){
-    mat[r][c].init_clean = true;
+void dfs(bfs_Data **&dir, Data **mat, int r, int c){
+    if((dir[r][c].min_dist+1)*2>life)   return;
+    dir[r][c].clean = true;
     if(!mat[r][c].available)  return;
     Point p(r,c);
     order.push_back(p);
@@ -215,4 +297,176 @@ void dfs(bfs_Data** dir, Data **mat, int r, int c){
         dfs(dir,mat,r+1,c);
     if(c+1<total_col && !dir[r][c+1].clean && dir[r][c+1].min_dist==dir[r][c].min_dist+1)
         dfs(dir,mat,r,c+1);
+}
+
+inline bool isAdj(Point a, Point b){
+    return abs(a.r-b.r)+abs(a.c-b.c)==1 ? true : false;
+}
+
+void gotobattery(Point p, Data **mat, int dir){
+    if(final_order.back().r==r_row&&final_order.back().c==r_col) return;
+    
+    bfs_Data **d;
+    switch(dir){
+        case UP:
+            d = Up;
+            break;
+        case RIGHT:
+            d = Right;
+            break;
+        case DOWN:
+            d = Down;
+            break;
+        case LEFT:
+            d = Left;
+            break;
+    }
+
+    while(d[p.r][p.c].min_dist>0){
+        if(p.r>0&&d[p.r-1][p.c].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r-1][p.c].final_clean)
+            p.r--;
+        else if(p.c>0&&d[p.r][p.c-1].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r][p.c-1].final_clean)
+            p.c--;
+        else if(p.r+1<total_row&&d[p.r+1][p.c].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r+1][p.c].final_clean)
+            p.r++;
+        else if(p.c+1<total_col&&d[p.r][p.c+1].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r][p.c+1].final_clean)
+            p.c++;
+        else if(p.r>0&&d[p.r-1][p.c].min_dist+1==d[p.r][p.c].min_dist)
+            p.r--;
+        else if(p.c>0&&d[p.r][p.c-1].min_dist+1==d[p.r][p.c].min_dist)
+            p.c--;
+        else if(p.r+1<total_row&&d[p.r+1][p.c].min_dist+1==d[p.r][p.c].min_dist)
+            p.r++;
+        else if(p.c+1<total_col&&d[p.r][p.c+1].min_dist+1==d[p.r][p.c].min_dist)
+            p.c++;
+        mat[p.r][p.c].final_clean = true;
+        final_order.push_back(p);
+    }
+    final_order.push_back(Point(r_row,r_col));
+    return;
+}
+
+int getback(Point p, Data** mat, int dir){
+    
+    bfs_Data **d;
+    switch(dir){
+        case UP:
+            d = Up;
+            break;
+        case RIGHT:
+            d = Right;
+            break;
+        case DOWN:
+            d = Down;
+            break;
+        case LEFT:
+            d = Left;
+            break;
+    }
+
+    int r = p.r, c = p.c;
+    stack<Point> s;
+    s.push(p);
+    while(d[p.r][p.c].min_dist>0){
+        if(p.r>0&&d[p.r-1][p.c].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r-1][p.c].final_clean)
+            p.r--;
+        else if(p.c>0&&d[p.r][p.c-1].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r][p.c-1].final_clean)
+            p.c--;
+        else if(p.r+1<total_row&&d[p.r+1][p.c].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r+1][p.c].final_clean)
+            p.r++;
+        else if(p.c+1<total_col&&d[p.r][p.c+1].min_dist+1==d[p.r][p.c].min_dist&&!mat[p.r][p.c+1].final_clean)
+            p.c++;
+        else if(p.r>0&&d[p.r-1][p.c].min_dist+1==d[p.r][p.c].min_dist)
+            p.r--;
+        else if(p.c>0&&d[p.r][p.c-1].min_dist+1==d[p.r][p.c].min_dist)
+            p.c--;
+        else if(p.r+1<total_row&&d[p.r+1][p.c].min_dist+1==d[p.r][p.c].min_dist)
+            p.r++;
+        else if(p.c+1<total_col&&d[p.r][p.c+1].min_dist+1==d[p.r][p.c].min_dist)
+            p.c++;
+        s.push(p);
+    }
+
+    while(!s.empty()){
+        Point cur = s.top();
+        mat[cur.r][cur.c].final_clean = true;
+        final_order.push_back(cur);
+        s.pop();
+    }
+
+    return life - d[r][c].min_dist - 1;
+}
+
+void from_a_to_b(int s_d, int d_d, Data** mat){
+    Point from(r_row,r_col), to(r_row,r_col);
+    if(s_d==UP) from.r--;
+    else if(s_d==RIGHT) from.c++;
+    else if(s_d==DOWN)  from.r++;
+    else from.c--;
+
+    if(d_d==RIGHT)  to.c++;
+    else if(d_d==DOWN)  to.r++;
+    else to.c--;
+
+    pathfinder(from,to,mat,s_d);
+}
+
+int pathfinder(Point s, Point d, Data** mat, int s_dir){
+    bfs_Data **pmat;
+    
+    switch(s_dir){
+        case UP:
+            pmat = Up;
+            break;
+        case RIGHT:
+            pmat = Right;
+            break;
+        case DOWN:
+            pmat = Down;
+            break;
+        case LEFT:
+            pmat = Left;
+            break;
+    }
+
+    stack<Point> stack;
+    stack.push(d);
+    while(pmat[d.r][d.c].min_dist>0){
+        if(d.r>0&&pmat[d.r-1][d.c].min_dist+1==pmat[d.r][d.c].min_dist)
+            d.r--;
+        else if(d.c>0&&pmat[d.r][d.c-1].min_dist+1==pmat[d.r][d.c].min_dist)
+            d.c--;
+        else if(d.r+1<total_row&&pmat[d.r+1][d.c].min_dist+1==pmat[d.r][d.c].min_dist)
+            d.r++;
+        else if(d.c+1<total_col&&pmat[d.r][d.c+1].min_dist+1==pmat[d.r][d.c].min_dist)
+            d.c++;
+        stack.push(d);
+    }
+    int bt=0;
+    while(!stack.empty()){
+        Point cur = stack.top();
+        final_order.push_back(cur);
+        stack.pop();
+        bt++;
+    }
+    return bt;
+}
+
+int dist(Point a, int dir){
+    bfs_Data **d;
+    switch(dir){
+        case UP:
+            d = Up;
+            break;
+        case RIGHT:
+            d = Right;
+            break;
+        case DOWN:
+            d = Down;
+            break;
+        case LEFT:
+            d = Left;
+            break;
+    }
+    return d[a.r][a.c].min_dist+1;
 }
