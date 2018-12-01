@@ -1,6 +1,7 @@
 #include<fstream>
 #include<iostream>
 #include<cstring>
+#include<string>
 #include<stack>
 #include<queue>
 #include<vector>
@@ -32,6 +33,8 @@ struct bfs_Data{
     int min_dist = 1000000;
 };
 
+int sum = 0;
+int back_r,back_c;
 int total_row, total_col;
 int life;
 int r_row, r_col;
@@ -42,6 +45,7 @@ bfs_Data** Down;
 bfs_Data** Right;
 bfs_Data** Left;
 vector<Point> order, final_order;
+ofstream tmp;
 
 void open_data(ifstream &floor, char* id){
     char floor_data[30];
@@ -75,6 +79,12 @@ int main(int argc, char* argv[]){
     open_data(inFile, argv[1]);
     inFile >> total_row >> total_col >> life;
     
+    //open tmp file for storing pos
+    char oftmp[15] = "/tmp.path";
+    char of[30];
+    strcpy(of,argv[1]);
+    strcat(of,oftmp);
+    tmp.open(of);
 
     //initialize 2d-array
     Data **mat;
@@ -104,7 +114,12 @@ int main(int argc, char* argv[]){
             }
         }
 
+    inFile.close();
 
+    
+    
+    
+    
     for(int i=0; i<4; i++){
         int init_row = r_row, init_col = r_col;
         switch(i){
@@ -134,6 +149,11 @@ int main(int argc, char* argv[]){
                 break;            
         }
     }
+
+    //delete toclean
+    for(int i=0; i<total_row; i++)
+        delete[] toclean[i];
+    delete[] toclean;
 
     for(int i=0; i<total_row; i++){
         for(int j=0; j<total_col; j++){
@@ -224,7 +244,9 @@ int main(int argc, char* argv[]){
     }*/
 
     //find final order
-    final_order.push_back(order[0]);
+    tmp<<order[0].r<<' '<<order[0].c<<'\n';
+    back_r=order[0].r, back_c=order[0].c;
+    sum++;
     int fix=1, s=0, bt=life;
     while(size_dir[s]==0)   s++;
     bt--;
@@ -243,7 +265,10 @@ int main(int argc, char* argv[]){
             
             gotobattery(order[i-fix], mat, origin_dir);
             from_a_to_b(origin_dir, dest_dir, mat);
-            final_order.push_back(Point(r_row,r_col));
+            //final_order.push_back(Point(r_row,r_col));
+            tmp<<r_row<<' '<<r_col<<'\n';
+            back_r=r_row, back_c=r_col;
+            sum++;
             bt = getback(order[i], mat, dest_dir);
 
             continue;
@@ -252,7 +277,10 @@ int main(int argc, char* argv[]){
         if(isAdj(order[i-fix],order[i])){
             if(bt-1>=dist(order[i],s)){
                 bt--;
-                final_order.push_back(order[i]);
+                //final_order.push_back(order[i]);
+                tmp<<order[i].r<<' '<<order[i].c<<'\n';
+                back_r=order[i].r, back_c=order[i].c;
+                sum++;
                 mat[order[i].r][order[i].c].final_clean = true;
             }
             else{
@@ -268,6 +296,29 @@ int main(int argc, char* argv[]){
         }
     }
     gotobattery(order[order.size()-1], mat, s);
+    
+    
+    
+    
+    
+    
+    tmp.close();
+
+    //delete 4 matrix;
+    for(int i=0; i<total_row; i++){
+        delete[] Up[i];
+        delete[] Down[i];
+        delete[] Right[i];
+        delete[] Left[i];
+    }
+    delete[] Up;
+    delete[] Down;
+    delete[] Right;
+    delete[] Left;
+
+    //
+    ifstream intmp;
+    intmp.open(of);
 
     //output
     char outftmp[15] = "/final.path";
@@ -277,10 +328,17 @@ int main(int argc, char* argv[]){
     ofstream outFile;
     outFile.open(outf);
     
-    outFile<<final_order.size()<<'\n';
-    for(int i=0; i<final_order.size(); i++){
-        outFile<<final_order[i].r<<' '<<final_order[i].c<<'\n';
+    outFile<<sum<<'\n';
+    
+    string line;
+    while(getline(intmp, line)){
+        outFile<<line<<'\n';
     }
+    intmp.close();
+    outFile.close();
+    remove(of);
+    
+    
 }
 
 void bfs(bfs_Data **&d, Data **mat, int r_r, int r_c){
@@ -360,7 +418,7 @@ inline bool isAdj(Point a, Point b){
 }
 
 void gotobattery(Point p, Data **mat, int dir){
-    if(final_order.back().r==r_row&&final_order.back().c==r_col) return;
+    if(back_r==r_row&&back_c==r_col) return;
     
     bfs_Data **d;
     switch(dir){
@@ -396,9 +454,15 @@ void gotobattery(Point p, Data **mat, int dir){
         else if(p.c+1<total_col&&d[p.r][p.c+1].min_dist+1==d[p.r][p.c].min_dist)
             p.c++;
         mat[p.r][p.c].final_clean = true;
-        final_order.push_back(p);
+        //final_order.push_back(p);
+        tmp<<p.r<<' '<<p.c<<'\n';
+        back_r=p.r, back_c=p.c;
+        sum++;
     }
-    final_order.push_back(Point(r_row,r_col));
+    //final_order.push_back(Point(r_row,r_col));
+    tmp<<r_row<<' '<<r_col<<'\n';
+    back_r=r_row, back_c=r_col;
+    sum++;
     return;
 }
 
@@ -446,7 +510,10 @@ int getback(Point p, Data** mat, int dir){
     while(!s.empty()){
         Point cur = s.top();
         mat[cur.r][cur.c].final_clean = true;
-        final_order.push_back(cur);
+        //final_order.push_back(cur);
+        tmp<<cur.r<<' '<<cur.c<<'\n';
+        back_r=cur.r, back_c=cur.c;
+        sum++;
         s.pop();
     }
 
@@ -501,7 +568,10 @@ int pathfinder(Point s, Point d, Data** mat, int s_dir){
     int bt=0;
     while(!stack.empty()){
         Point cur = stack.top();
-        final_order.push_back(cur);
+        //final_order.push_back(cur);
+        tmp<<cur.r<<' '<<cur.c<<'\n';
+        back_r=cur.r, back_c=cur.c;
+        sum++;
         stack.pop();
         bt++;
     }
