@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
             mat[i][j].dir_clean = findlowest(up,right,down,left); 
             //cout<<mat[i][j].dir_clean<<' ';
         }
-        cout<<'\n';
+        //cout<<'\n';
     }
     
     //determine the order to clean/
@@ -186,8 +186,8 @@ int main(int argc, char* argv[]){
         }
         mat[r_row][r_col].available = true;
         size_dir[i] = order.size();
-        cout<<size_dir[i]<<' ';
-        if(i==3)    cout<<'\n';
+        //cout<<size_dir[i]<<' ';
+        //if(i==3)    cout<<'\n';
     }
     
     
